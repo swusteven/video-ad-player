@@ -203,7 +203,7 @@ export default class VideoAdPlayer {
              * per the VAST spec we drop this if we do not load one of the possibly many verications
              * in the tag. From here we continue looping and add any valid verifications to be sent to omid context
              * see section 2.4.2 of the official spec https://iabtechlab.com/wp-content/uploads/2022/09/VAST_4.3.pdf
-             */ 
+             */
             if (jsResource.getAttribute('apiFramework') != 'omid') {
                 Logger.info('detected non-omid compatible script, skipping load, attempting to fire verificationNotExecuted');
                 const notExecutedBeacon = verification.querySelector('TrackingEvents Tracking[event="verificationNotExecuted"]');
@@ -249,7 +249,7 @@ export default class VideoAdPlayer {
         return true;
     }
 
-    async loadAd() {
+    async loadAd(targetDimension = undefined) {
         try {
             const response = await fetch(this.renderingData.TagVideoVAST);
             const DOMXML = await response.text();
@@ -264,9 +264,24 @@ export default class VideoAdPlayer {
                 }
             }
 
-            //get the video and clickThrough links
-            this.mediaURL = data.querySelector('MediaFile').firstChild.wholeText.trim();
             this.clickThroughURL = data.querySelector('ClickThrough')?.firstChild.wholeText.trim();
+
+            const videos = data.querySelectorAll('MediaFile');
+            this.videos = [];
+            for (let i = 0; i < videos.length; i++) {
+                const video = videos[i];
+                const mediaURL = this.sanitizeMediaURL(video.firstChild.wholeText.trim());
+                const width = video.getAttribute('width');
+                const height = video.getAttribute('height');
+                const aspectRatio = width / height;
+
+                this.videos.push({
+                    mediaURL,
+                    width,
+                    height,
+                    aspectRatio
+                });
+            }
 
             //get various beacons
             this.impression.beacon = data.querySelector('Impression').firstChild.wholeText.trim();
@@ -286,15 +301,8 @@ export default class VideoAdPlayer {
             this.pauseBeacon.beacon = data.querySelector("Tracking[event='pause']")?.firstChild?.wholeText?.trim();
             this.resumeBeacon.beacon = data.querySelector("Tracking[event='resume']")?.firstChild?.wholeText?.trim();
 
-
-            // OPS-1482454 - replace the http protocol to https, otherwise Chrome will flag as unsecure;
-            const firstFiveChar = this.mediaURL.slice(0, 5);
-            if (firstFiveChar != 'https' && firstFiveChar.slice(0, 4) === 'http' ) {
-                this.mediaURL =  this.mediaURL.replace('http', 'https');
-            }
-
             //set the video URL
-            this.videoPlayer.src = this.mediaURL;
+            this.videoPlayer.src = this.selectVideo(targetDimension);
 
             /**
              * OPS-1494149 / https://criteo.slack.com/archives/C04QHLFLH60/p1691509451660609
@@ -618,5 +626,80 @@ export default class VideoAdPlayer {
 
         this.videoPlayer.addEventListener('waiting', handleWaitingEvent.bind(this));
         this.videoPlayer.addEventListener('timeupdate', handleTimeUpdateEvent.bind(this));
+    }
+
+    selectVideo(targetDimension) {
+
+        if (this.videos.length === 0) {
+            Logger.error('No video found');
+            return undefined;
+        }
+
+        const targetAspectRatio = targetDimension.width / targetDimension.height;
+
+        if ((this.videos.length === 1) ||
+            (this.videos.length > 1 && !targetDimension) ||
+            (this.videos.length > 1 && !targetAspectRatio)
+        ) {
+            if (this.videos.length > 1 && !targetDimension || this.videos.length > 1 && !targetAspectRatio) {
+                Logger.info('Multiple videos found but no target dimension provided, select the first video');
+            }
+
+            //use the first media file
+            const mediaURL = this.videos[0].mediaURL;
+            this.mediaURL = mediaURL;
+            return mediaURL;
+        }
+
+        //sort the videos ratio in ascending order
+        this.videos.sort((a, b) => a.aspectRatio - b.aspectRatio);
+
+        let closestVideo = null;
+        let closestRatioDifference = Infinity;
+
+        //find the video with the closest aspect ratio and dimension to the player container
+        for (const video of this.videos) {
+            const ratioDiffence = Math.abs(video.aspectRatio.toFixed(2) - targetAspectRatio.toFixed(2));
+
+            // Check if ratio of this video is the closest so far
+            if (ratioDiffence < closestRatioDifference) {
+                closestRatioDifference = ratioDiffence;
+                closestVideo = video;
+            }
+
+            //two video with same ratio, check the dimension difference
+            if (closestVideo &&
+                closestVideo.mediaURL !== video.mediaURL &&
+                closestVideo.aspectRatio === video.aspectRatio)
+            {
+
+                //current video
+                const currVideoWidthDifference = Math.abs(targetDimension.width - video.width);
+                const currVideoHeightDifference = Math.abs(targetDimension.height - video.height);
+                const currVideoTotalDifference = currVideoWidthDifference + currVideoHeightDifference;
+
+                //current closest video
+                const closestVideoWidthDifference = Math.abs(targetDimension.width - closestVideo.width);
+                const closestVideoHeightDifference = Math.abs(targetDimension.height - closestVideo.height);
+                const closestVideoTotalDifference = closestVideoWidthDifference + closestVideoHeightDifference;
+
+                if (currVideoTotalDifference < closestVideoTotalDifference) {
+                    closestVideo = video;
+                }
+            }
+        }
+
+        this.mediaURL = closestVideo.mediaURL;
+        return closestVideo.mediaURL;
+    }
+
+    sanitizeMediaURL(mediaURL) {
+
+        // OPS-1482454 - replace the http protocol to https, otherwise Chrome will flag as unsecure;
+        const firstFiveChar = mediaURL.slice(0, 5);
+        if (firstFiveChar != 'https' && firstFiveChar.slice(0, 4) === 'http' ) {
+            mediaURL =  mediaURL.replace('http', 'https');
+        }
+        return mediaURL;
     }
 }
