@@ -1,0 +1,18 @@
+{
+  "name": "criteo-video-player-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "criteo-video-player": "file:../.."
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "vite": "^5.4.1"
+  }
+}
