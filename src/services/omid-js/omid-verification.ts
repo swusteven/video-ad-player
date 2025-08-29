@@ -1,6 +1,12 @@
 import { VastInformation } from "../vast-model";
 import { sendBeacon } from "../events-handler";
 
+declare global {
+  interface Window {
+    OmidSessionClient?: any;
+  }
+}
+
 export interface MediaEvents {
   pause: () => void;
   resume: () => void;
@@ -21,20 +27,30 @@ interface AdVerification {
 }
 
 export async function setupAdVerification(
-  vastInformation: VastInformation
+  vastInformation: VastInformation,
+  sessionClientUrl: string,
+  omWebUrl: string,
 ): Promise<AdVerification | null> {
   if (vastInformation.adVerifications.length < 1) {
     console.log("No ad verifications found");
     return null;
   }
 
-  // Don't load the scripts twice if the user is requesting multiple videos
-  // @ts-ignore
-  if (window.OmidSessionClient && window.OmidSessionClient["default"]) {
-    await initializeScripts();
+  if (sessionClientUrl === "" || omWebUrl === "") {
+    console.log("Missing sessionClientUrl or omWebUrl. Abort loading OMID verification.");
+    return null;
   }
 
-  // @ts-ignore
+  // Don't load the scripts twice if the user is requesting multiple videos
+  if (!window.OmidSessionClient || !window.OmidSessionClient["default"]) {
+    await initializeScripts(sessionClientUrl, omWebUrl);
+  }
+
+  if (!window.OmidSessionClient || !window.OmidSessionClient["default"]) {
+    console.error("OMID Session Client not loaded");
+    return null;
+  }
+
   const sessionClient = window.OmidSessionClient["default"];
 
   const AdSession = sessionClient.AdSession;
@@ -88,7 +104,6 @@ export async function setupAdVerification(
   }
 
   const context = new Context(partner, resources, CONTENT_URL);
-  // context.setVideoElement(this.videoPlayer); -- TODO: Add inside video player
   context.setServiceWindow(OMSDK_SERVICE_WINDOW);
   const adSession = new AdSession(context);
   adSession.setCreativeType("video");
@@ -128,14 +143,10 @@ export async function setupAdVerification(
   return { onAdLoaded, mediaEvents, setVideoContext };
 }
 
-async function initializeScripts() {
+async function initializeScripts(sessionClientUrl: string, omWebUrl: string) {
   try {
-    await loadScript(
-      "https://static.criteo.net/banners/js/omidjs/stable/omid-session-client-v1.js"
-    );
-    await loadScript(
-      "https://static.criteo.net/banners/js/omidjs/stable/omweb-v1.js"
-    );
+    await loadScript(sessionClientUrl);
+    await loadScript(omWebUrl);
   } catch (error) {
     console.error(error);
   }

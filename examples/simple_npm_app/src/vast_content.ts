@@ -36,16 +36,31 @@ export const vastContent = `<VAST version="3.0">
                         <VideoClicks>
                             <ClickThrough id="Criteo"><![CDATA[ https://criteo.com/123]]></ClickThrough>
                         </VideoClicks>
-                        <MediaFiles>
+                         <MediaFiles>   
                             <MediaFile id="Criteo_mp4_ABC" delivery="progressive" width="720"
                                 height="406" type="video/mp4" scalable="true"
                                 maintainAspectRatio="true">
-<![CDATA[ http://static.criteo.net/design/dt/6437/210813/70c61361e7864e3f8ee513f8a79dcc45_in_house_creative_ctv_test_30s.mp4 ]]>
-</MediaFile>
+                                <![CDATA[ http://static.criteo.net/design/dt/6437/210813/70c61361e7864e3f8ee513f8a79dcc45_in_house_creative_ctv_test_30s.mp4 ]]>
+                                <ClosedCaptionFiles>
+                                <ClosedCaptionFile type="text/vtt" language="fr">
+                                    https://static.criteo.net/video/onsite_cc/pumacostcotest.vtt
+                                </ClosedCaptionFile>
+                                </ClosedCaptionFiles>
+                            </MediaFile>                                                               
                         </MediaFiles>
                     </Linear>
                 </Creative>
             </Creatives>
+            <AdVerifications>
+                <Verification vendor="criteo.com-omid">
+                    <JavaScriptResource apiFramework="omid" browserOptional="true">
+                        <![CDATA[ https://static.criteo.net/banners/js/omidjs/stable/omid-validation-verification-script-for-retail-media.js ]]>
+                    </JavaScriptResource>
+                    <VerificationParameters>
+                        <![CDATA[ {"beacons":{"omidTrackView":"https://bbt-web-bbt.preprod.crto.in/rm?rm_omidTrackView"}} ]]>
+                    </VerificationParameters>
+                </Verification>
+            </AdVerifications>
         </InLine>
     </Ad>
 </VAST>`;

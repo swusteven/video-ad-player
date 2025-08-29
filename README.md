@@ -14,3 +14,9 @@ The package provides two APIs to render your videos.
 - From content: `criteoVideoPlayerFromContent`. The script will use the passed file content (expecting a stringified XML) and afterwards display the video. 
 
 For each, you should provide a `video element` which should be an HTML element in which you want the video to be rendered. 
+
+To support **viewability measurement**, the IAB Open Measurement SDK (OM SDK) for Web requires two scripts. See the `simple_npm_app` for reference.
+1. Omid-Session-Client - Provided as `sessionClientUrl` in `VideoOptions`.
+
+2. OMID JS library - Provided as `omWebUrl` in `VideoOptions`.
+    

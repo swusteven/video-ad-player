@@ -13,6 +13,8 @@ export interface VideoOptions {
   fallbackImage?: FallbackImageProps;
   maxVolume?: number;
   ccButtonLabel?: string;
+  sessionClientUrl?: string;
+  omWebUrl?: string;
   targetDimensions?: {
     width: number;
     height: number;
@@ -33,7 +35,15 @@ interface VideoProps {
 export function Video(props: VideoProps) {
   const { vastInformation, options } = props;
   const { mediaFiles } = vastInformation;
-  const { fallbackImage, altText, maxVolume, targetDimensions, ccButtonLabel } = options;
+  const {
+    fallbackImage,
+    altText,
+    maxVolume,
+    targetDimensions,
+    ccButtonLabel,
+    sessionClientUrl,
+    omWebUrl,
+  } = options;
   const selectedVideo = selectVideo({ mediaFiles, targetDimensions });
 
   const vidRef = useRef<HTMLVideoElement>(null);
@@ -109,8 +119,12 @@ export function Video(props: VideoProps) {
   };
 
   const registerAdVerification = async () => {
-    const adVerification = await setupAdVerification(vastInformation);
-
+    const adVerification = await setupAdVerification(
+      vastInformation,
+      sessionClientUrl || "",
+      omWebUrl || "",
+    );
+    
     if (adVerification === null) {
       eventsRef.current = new EventsHandler(vastInformation, null);
       return;
