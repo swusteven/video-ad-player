@@ -193,6 +193,7 @@ export function Video(props: VideoProps) {
         onWaiting={handleWaiting}
         data-testid="video-element"
         volume={maxVolume}
+        crossorigin="anonymous"
       >
         {fallbackImage?.src &&
           fallbackImage?.optionalVideoRedirectUrl &&
