@@ -11,7 +11,7 @@ criteoVideoPlayerFromContent(
       width: 720,
       height: 406
     },
-    sessionClientUrl: "https://static.criteo.net/banners/js/omidjs/stable/omid-session-client-v1.js",
-    omWebUrl: "https://static.criteo.net/banners/js/omidjs/stable/omweb-v1.js"
+    sessionClientUrl: "https://example.com/omid-session-client.js",
+    omWebUrl: "https://example.com/omweb.js"
   }
 );
