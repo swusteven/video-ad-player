@@ -30,4 +30,6 @@ Per IAB requirements, each retailer must obtain their own build of these scripts
 2. Navigate to the [Open Measurement SDK for Web](https://iabtechlab.com/standards/open-measurement-sdk/#:~:text=to%20get%20started-,OM%20Web%20Video%20SDK,-OM%20SDK%20Web) section.
 3. Generate and download your **`OMSDK_<YourRetailerName>`** package.
 4. Host the downloaded files in your environment or reference them from your own CDN.
-    
+
+### Integration Guide
+**Learn more in our [Criteo-Owned Video Player Integration guide](https://developers.criteo.com/retailer-integration/docs/criteo-owned-video-player-integration) to integrate this video player into your website to run video ads in web apps.**
