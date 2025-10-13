@@ -3,6 +3,7 @@ import { VastInformation } from "./vast-model";
 
 export class EventsHandler {
   currentLoop = 1;
+  adImpressionSent = false;
   adStartedSent = false;
   adFirstQuartileSent = false;
   adMidpointSent = false;
@@ -19,7 +20,7 @@ export class EventsHandler {
     if (this.currentLoop != 1) {
       return;
     }
-    if (percent >= 0.01 && !this.adStartedSent) {
+    if (percent >= 0.01 && !this.adStartedSent) {      
       this.sendAdStarted(duration, volume);
     }
     if (percent >= 25 && !this.adFirstQuartileSent) {
@@ -81,6 +82,13 @@ export class EventsHandler {
   bufferFinish() {
     if (this.mediaEvents) {
       this.mediaEvents.bufferFinish();
+    }
+  }
+
+  sendAdImpression() {
+    if (!this.adImpressionSent) {
+      sendBeacon(this.vastInformation.beacons.impression);
+      this.adImpressionSent = true;
     }
   }
 

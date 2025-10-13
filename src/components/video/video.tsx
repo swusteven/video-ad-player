@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "preact/compat";
 import { VastInformation } from "../../services/vast-model";
 import { ControlBar } from "../control-bar/control-bar";
-import { FallbackImage } from "../fallback-image/fallback-image";
 import { EventsHandler, sendBeacon } from "../../services/events-handler";
 import { setupAdVerification } from "../../services/omid-js/omid-verification";
 import { ClosedCaption } from "../closed-caption/closed-caption";
@@ -11,8 +10,6 @@ import { ClosedCaptionRender } from "../closed-caption/closed-caption-render";
 export interface VideoOptions {
   /** A short, descriptive text alternative for the video content. */
   altText: string;
-  /** Defines an image to display when the video fails to load or before playback begins. */
-  fallbackImage?: FallbackImageProps;
   /** Sets the maximum allowed volume level for playback (range: 0–1). Default is 1 */
   maxVolume?: number;
   /** Custom label for the Closed Caption (CC) button in the player UI. */
@@ -28,15 +25,6 @@ export interface VideoOptions {
   };
 }
 
-export interface FallbackImageProps {
-  /** The source URL of the fallback image. */
-  src: string;
-  /** Optional URL to redirect to when the fallback image is clicked. */
-  optionalVideoRedirectUrl: string;
-  /** Optional target for the redirect (e.g., '_blank' for new tab). */
-  optionalRedirectTarget: string;
-}
-
 interface VideoProps {
   /** Configuration options for the video player including accessibility, dimensions, and OMID settings. */
   options: VideoOptions;
@@ -48,7 +36,6 @@ export function Video(props: VideoProps) {
   const { vastInformation, options } = props;
   const { mediaFiles } = vastInformation;
   const {
-    fallbackImage,
     altText,
     maxVolume,
     targetDimensions,
@@ -60,6 +47,7 @@ export function Video(props: VideoProps) {
 
   const vidRef = useRef<HTMLVideoElement>(null);
   const eventsRef = useRef<EventsHandler>(null);
+  const isPlayingRef = useRef(false);
   
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -109,6 +97,7 @@ export function Video(props: VideoProps) {
         vidRef.current!.play();
       }
       setIsPlaying(!isPlaying);
+      isPlayingRef.current = !isPlaying;
     }
   };
 
@@ -119,12 +108,14 @@ export function Video(props: VideoProps) {
           let entry = entries[i];
           let isVisible = entry.isIntersecting;
 
-          if (isVisible && !isPlaying) {
+          if (isVisible && !isPlayingRef.current) {
             vidRef.current!.play();
             setIsPlaying(true);
-          } else if (!isVisible && isPlaying) {
+            isPlayingRef.current = true;
+          } else if (!isVisible && isPlayingRef.current) {
             vidRef.current!.pause();
             setIsPlaying(false);
+            isPlayingRef.current = false;
           }
         }
       },
@@ -148,13 +139,33 @@ export function Video(props: VideoProps) {
     const { onAdLoaded, setVideoContext, mediaEvents } = adVerification;
     eventsRef.current = new EventsHandler(vastInformation, mediaEvents);
     setVideoContext(vidRef.current!);
-
-    vidRef.current!.addEventListener("canplay", onAdLoaded, { once: true });
+    
+    // Already playable: fire immediately
+    if (vidRef.current!.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      onAdLoaded();
+    } else {
+      // Otherwise, wait until the video can play 
+      vidRef.current!.addEventListener("canplay", onAdLoaded, { once: true });
+    }
   };
+
+  const handleImpressionBeacon = () => {
+
+    // Already playable: fire immediately
+    if (vidRef.current!.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      eventsRef.current?.sendAdImpression();
+    } else {
+      // Otherwise, wait until the video can play
+      vidRef.current!.addEventListener("canplay", () => {
+        eventsRef.current?.sendAdImpression();
+      }, { once: true });
+    }
+  }
 
   useEffect(() => {
     async function loadVerificationAndPlay() {      
       await registerAdVerification();
+      handleImpressionBeacon();
       registerVideoInViewportObserver();
       initializeClosedCaptionState();
       registerKeyboardControl();
@@ -165,6 +176,7 @@ export function Video(props: VideoProps) {
 
   const onClickPlayPause = () => {
     setIsPlaying(prev => {
+      const newPlaying = !prev;
       if (prev) {
         vidRef.current!.pause();
         eventsRef.current?.pause();
@@ -172,7 +184,8 @@ export function Video(props: VideoProps) {
         vidRef.current!.play();
         eventsRef.current?.play();
       }
-      return !prev;
+      isPlayingRef.current = newPlaying;
+      return newPlaying;
     });
   };
 
@@ -264,15 +277,6 @@ export function Video(props: VideoProps) {
         tabIndex={0}
         crossorigin="anonymous"
       >
-        {fallbackImage?.src &&
-          fallbackImage?.optionalVideoRedirectUrl &&
-          fallbackImage?.optionalRedirectTarget && (
-            <FallbackImage
-              fallbackImage={fallbackImage?.src}
-              optionalVideoRedirectUrl={fallbackImage?.optionalVideoRedirectUrl}
-              optionalRedirectTarget={fallbackImage?.optionalRedirectTarget}
-            />
-          )}
         <ClosedCaption
           closedCaptionFile={selectedVideo.closedCaptionFile}
           closedCaptionLanguage={selectedVideo.closedCaptionLanguage}
