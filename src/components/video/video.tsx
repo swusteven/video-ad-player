@@ -129,6 +129,7 @@ export function Video(props: VideoProps) {
       vastInformation,
       sessionClientUrl || "",
       omWebUrl || "",
+      vidRef,
     );
     
     if (adVerification === null) {
@@ -136,9 +137,8 @@ export function Video(props: VideoProps) {
       return;
     }
 
-    const { onAdLoaded, setVideoContext, mediaEvents } = adVerification;
+    const { onAdLoaded, mediaEvents } = adVerification;
     eventsRef.current = new EventsHandler(vastInformation, mediaEvents);
-    setVideoContext(vidRef.current!);
     
     // Already playable: fire immediately
     if (vidRef.current!.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
