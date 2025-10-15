@@ -1,5 +1,6 @@
 import { VastInformation } from "../vast-model";
 import { sendBeacon } from "../events-handler";
+import { RefObject } from "preact";
 
 declare global {
   interface Window {
@@ -21,8 +22,7 @@ export interface MediaEvents {
 }
 
 interface AdVerification {
-  onAdLoaded: () => void;
-  setVideoContext: (video: HTMLVideoElement) => void;
+  onAdLoaded: () => void;  
   mediaEvents: MediaEvents;
 }
 
@@ -30,6 +30,7 @@ export async function setupAdVerification(
   vastInformation: VastInformation,
   sessionClientUrl: string,
   omWebUrl: string,
+  videoRef: RefObject<HTMLVideoElement>
 ): Promise<AdVerification | null> {
   if (vastInformation.adVerifications.length < 1) {
     console.log("No ad verifications found");
@@ -104,6 +105,7 @@ export async function setupAdVerification(
   }
 
   const context = new Context(partner, resources, CONTENT_URL);
+  context.setVideoElement(videoRef.current);
   context.setServiceWindow(OMSDK_SERVICE_WINDOW);
   const adSession = new AdSession(context);
   adSession.setCreativeType("video");
@@ -136,11 +138,7 @@ export async function setupAdVerification(
     });
   };
 
-  const setVideoContext = (videoElement: HTMLVideoElement) => {
-    context.setVideoElement(videoElement);
-  };
-
-  return { onAdLoaded, mediaEvents, setVideoContext };
+  return { onAdLoaded, mediaEvents };
 }
 
 async function initializeScripts(sessionClientUrl: string, omWebUrl: string) {
