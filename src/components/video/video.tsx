@@ -258,7 +258,7 @@ export function Video(props: VideoProps) {
   };
 
   return (
-    <div class="rm-video-player-container">
+    <div class="criteo-rm-video-player-container">
       <video
         ref={vidRef}
         class="rm-ad-player"
