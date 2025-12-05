@@ -8,14 +8,36 @@ export const renderVideo = async (
   options: VideoOptions
 ) => {
 
-  //Not to display a blank video and control element when media file or element ID is missing
-  if (vastInformation.mediaFiles.length === 0 || !elementId) {
-    console.warn("No media files found the VAST XML object or element ID is missing. Aborting Video rendering.");
+  const targetElement = elementId
+    ? document.getElementById(elementId)
+    : null;
+
+  if (!targetElement) {
+    options.onError?.({
+      source: "elementId",
+      element: null,
+      src: undefined,      
+      message: `Target element with id "${elementId}" was not found in the DOM.`,
+      nativeEvent: undefined,
+    });
+    console.warn("Element ID is missing or not found. Aborting Video rendering.");
+    return null;
+  }
+
+  if (!vastInformation.mediaFiles.length) {
+    options.onError?.({
+      source: "vast",
+      element: null,
+      src: undefined,      
+      message: "No media files found in the VAST XML object. Aborting Video rendering.",
+      nativeEvent: undefined,
+    });
+    console.warn("No media files found in the VAST XML object. Aborting Video rendering.");
     return null;
   }
 
   render(
     <Video options={options} vastInformation={vastInformation} />,
-    document.getElementById(elementId)!
+    targetElement
   );
 };
