@@ -7,6 +7,20 @@ import { ClosedCaption } from "../closed-caption/closed-caption";
 import { selectVideo, getCueText } from "../../services/video-utils";
 import { ClosedCaptionRender } from "../closed-caption/closed-caption-render";
 
+
+export interface VideoErrorInfo {
+  /** Where the error originated: VAST loading/parsing or <video> runtime failure. */
+  source: "vast" | "video" | "elementId";
+  /** The failing element (null for VAST errors). */
+  element: HTMLElement | null;
+  /** VAST URL or media file URL that failed. */
+  src?: string;
+  /** Human-readable description of the error. */
+  message: string;
+  /** Raw native event or thrown error for debugging. */
+  nativeEvent?: Event | unknown;
+}
+
 export interface VideoOptions {
   /** A short, descriptive text alternative for the video content. */
   altText: string;
@@ -23,6 +37,8 @@ export interface VideoOptions {
     width: number;
     height: number;
   };
+   /** Optional callback invoked when the video fails to load or errors out. */
+  onError?: (info: VideoErrorInfo) => void;
 }
 
 interface VideoProps {
@@ -42,6 +58,7 @@ export function Video(props: VideoProps) {
     ccButtonLabel,
     sessionClientUrl,
     omWebUrl,
+    onError,
   } = options;
   const selectedVideo = selectVideo({ mediaFiles, targetDimensions });
 
@@ -257,6 +274,20 @@ export function Video(props: VideoProps) {
     }
   };
 
+  const handleVideoError = (event: Event) => {
+    console.log("Video error event:", event);
+    const video = vidRef.current;
+    const mediaError = video?.error;
+
+    onError?.({
+      source: "video",
+      element: video ?? null,
+      src: selectedVideo?.mediaUrl,
+      message: mediaError?.message ?? "Unknown video error",
+      nativeEvent: event,
+    });
+  };
+
   return (
     <div class="criteo-rm-video-player-container">
       <video
@@ -272,6 +303,7 @@ export function Video(props: VideoProps) {
         onEnded={handleTimeEnded}
         onClick={handleClick}
         onWaiting={handleWaiting}
+        onError={handleVideoError}
         data-testid="video-element"
         volume={maxVolume}
         tabIndex={0}

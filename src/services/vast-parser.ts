@@ -1,23 +1,54 @@
 import { AdVerification, MediaFile, VastInformation } from "./vast-model";
+import { VideoOptions} from "./../components/video/video";
 import { toHttps } from "./vast-utils";
 
 export class VastParser {
-  public async getFromUrl(vastUrl: string) {
-    const response = await fetch(vastUrl);
+  
+  public async getFromUrl(vastUrl: string, options: Pick<VideoOptions, "onError">) {
+    let response: Response;
+
+    try {
+      response = await fetch(vastUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP Status Code:${response.status}`);
+      }
+
+    } catch (e) {
+      const message =
+        e instanceof Error && e.message.startsWith("HTTP")
+          ? `VAST request failed (${e.message})`
+          : "Invalid VAST URL or network error";
+
+      options?.onError?.({
+        source: "vast",
+        element: null,
+        src: vastUrl,
+        message,
+        nativeEvent: e,
+    });
+      throw e;
+    }
+
     const DOMXML = await response.text();
-    return this.getInformation(DOMXML);
+    return this.getInformation(DOMXML, vastUrl, options);
   }
 
-  public getFromContent(vastText: string) {
-    return this.getInformation(vastText);
+  public getFromContent(vastText: string, options: Pick<VideoOptions, "onError"> ) {
+    return this.getInformation(vastText, "vast-content", options);
   }
 
-  private getInformation(vastText: string): VastInformation {
+  private getInformation(vastText: string, sourceUrl?: string, options?: Pick<VideoOptions, "onError"> ): VastInformation {
     try {
       const data = new window.DOMParser().parseFromString(vastText, "text/xml");
       return this.parseFile(data);
-    } catch (e) {
-      console.error("Could not fetch vast file", e);
+    } catch (e) {      
+      options?.onError?.({
+        source: "vast",
+        element: null,
+        src: sourceUrl,
+        message: "Could not parse VAST XML",
+      });      
       throw e;
     }
   }

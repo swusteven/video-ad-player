@@ -12,12 +12,29 @@
       import { criteoVideoPlayerFromUrl } from "../../dist/criteo-video-player.es.js";
 
       criteoVideoPlayerFromUrl(
-        "https://static.criteo.net/images/video/simple_vast.xml",
+        "https://static.criteo.net/images/video/simple_vast.xml",        
         "video-player",
         {
           altText: "Criteo Video Player",        
           sessionClientUrl: "https://example.com/omid-session-client.js",
-          omWebUrl: "https://example.com/omweb.js"
+          omWebUrl: "https://example.com/omweb.js",
+          // Optional error callback. Do something based on error source
+          onError: (err) => {
+            console.warn(" Criteo Player Error", err);
+
+             
+            if (err.source === "vast") {              
+              console.warn("VAST load/parse failed:", err.message);
+            }              
+
+            if (err.source === "video") {              
+              console.warn("Video failed:", err.message);
+            }
+
+            if (err.source === "elementId") {              
+              console.warn("Element ID error:", err.message);
+            }
+          }
         }
       );
     </script>
