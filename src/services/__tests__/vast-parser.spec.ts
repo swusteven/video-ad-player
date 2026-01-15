@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { VastParser } from "./vast-parser";
-import type { MediaFile } from "./vast-model";
+import { VastParser } from "../vast-parser";
+import type { MediaFile } from "../vast-model";
 
 function createVastDoc(xml: string): Document {
   return new window.DOMParser().parseFromString(xml, "text/xml");
@@ -127,3 +127,4 @@ describe("VastParser.queryMediaFiles", () => {
     expect(result[0].aspectRatio).toBeUndefined();
   });
 });
+
