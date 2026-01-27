@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { selectVideo } from "./video-utils";
-import type { MediaFile } from "./vast-model";
+import { selectVideo } from "../video-utils";
+import type { MediaFile } from "../vast-model";
 
 describe("selectVideo", () => {
   const baseMedia: Partial<MediaFile> = {
@@ -99,3 +99,4 @@ describe("selectVideo", () => {
     expect(result.closedCaptionLanguage).toBe("");
   });
 });
+
